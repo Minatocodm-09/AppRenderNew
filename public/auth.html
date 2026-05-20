@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sign in / Sign up | Aprender</title>
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .auth-card{max-width:420px;width:100%;background:rgba(255,255,255,.08);
+    backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);
+    border-radius:20px;padding:32px;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .auth-card h1{margin-bottom:8px;font-size:1.6rem}
+  .auth-card p.sub{opacity:.75;margin-bottom:24px;font-size:.95rem}
+  .auth-tabs{display:flex;gap:8px;margin-bottom:20px;background:rgba(0,0,0,.25);
+    padding:4px;border-radius:10px}
+  .auth-tabs button{flex:1;background:transparent;border:none;color:#fff;padding:10px;
+    border-radius:8px;cursor:pointer;font-weight:600}
+  .auth-tabs button.active{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+  .auth-card label{display:block;margin:12px 0 6px;font-size:.9rem;opacity:.85}
+  .auth-card input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+    background:rgba(0,0,0,.25);color:#fff;font-size:1rem}
+  .auth-card input:focus{outline:none;border-color:#8b5cf6}
+  .auth-card .submit{width:100%;margin-top:18px;padding:13px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:1rem;cursor:pointer}
+  .auth-card .submit:disabled{opacity:.5;cursor:wait}
+  .msg{margin-top:12px;padding:10px;border-radius:8px;font-size:.9rem;display:none}
+  .msg.err{background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4)}
+  .msg.ok{background:rgba(92,219,149,.2);border:1px solid rgba(92,219,149,.4)}
+  .back{display:inline-block;margin-top:18px;color:#74B9FF;text-decoration:none;font-size:.9rem}
+</style>
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Welcome to Aprender</h1>
+    <p class="sub">Sign in to save scores and climb the leaderboard.</p>
+    <div class="auth-tabs">
+      <button id="tabSignin" class="active">Sign in</button>
+      <button id="tabSignup">Sign up</button>
+    </div>
+    <form id="authForm">
+      <div id="nameRow" style="display:none">
+        <label>Display name</label>
+        <input id="name" type="text" placeholder="Your name" />
+      </div>
+      <label>Email</label>
+      <input id="email" type="email" required autocomplete="email" />
+      <label>Password</label>
+      <input id="password" type="password" minlength="6" required autocomplete="current-password" />
+      <button class="submit" type="submit" id="submitBtn">Sign in</button>
+      <div class="msg" id="msg"></div>
+    </form>
+    <a class="back" href="/">← Back to home</a>
+  </div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.4";
+const supabase = createClient(
+  "https://zspcixpgjhvrzynfraxh.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzcGNpeHBnamh2cnp5bmZyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzExMDAsImV4cCI6MjA5NDU0NzEwMH0.UVBW-N0Yvx2kh9YCZ-mG8NMf9FyQhjiyVL_VX69pnhM"
+);
+
+const $ = id => document.getElementById(id);
+let mode = "signin";
+
+function setMode(m){
+  mode = m;
+  $("tabSignin").classList.toggle("active", m === "signin");
+  $("tabSignup").classList.toggle("active", m === "signup");
+  $("nameRow").style.display = m === "signup" ? "block" : "none";
+  $("submitBtn").textContent = m === "signin" ? "Sign in" : "Create account";
+  $("password").setAttribute("autocomplete", m === "signin" ? "current-password" : "new-password");
+  $("msg").style.display = "none";
+}
+$("tabSignin").onclick = () => setMode("signin");
+$("tabSignup").onclick = () => setMode("signup");
+
+function show(text, ok){
+  const m = $("msg");
+  m.textContent = text;
+  m.className = "msg " + (ok ? "ok" : "err");
+  m.style.display = "block";
+}
+
+$("authForm").onsubmit = async (e) => {
+  e.preventDefault();
+  $("submitBtn").disabled = true;
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  try {
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      show("Signed in! Redirecting…", true);
+      setTimeout(() => location.href = "/", 600);
+    } else {
+      const name = $("name").value.trim() || email.split("@")[0];
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { display_name: name },
+        }
+      });
+      if (error) throw error;
+      show("Account created! Check your email to confirm, then sign in.", true);
+      setMode("signin");
+    }
+  } catch (err) {
+    show(err.message || "Something went wrong.", false);
+  } finally {
+    $("submitBtn").disabled = false;
+  }
+};
+
+// If already signed in, bounce home
+(async () => {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) location.href = "/";
+})();
+</script>
+</body>
+</html>

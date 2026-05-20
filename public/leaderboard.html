@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Leaderboard | Aprender</title>
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  body{padding:20px;min-height:100vh}
+  .wrap{max-width:900px;margin:0 auto;color:#fff}
+  h1{margin:20px 0 8px;font-size:2rem}
+  p.sub{opacity:.8;margin-bottom:20px}
+  .cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .cats button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+    color:#fff;padding:10px 16px;border-radius:999px;cursor:pointer;font-weight:600}
+  .cats button.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent}
+  table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.05);border-radius:14px;overflow:hidden}
+  th,td{padding:14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+  th{background:rgba(0,0,0,.35);font-size:.85rem;letter-spacing:.5px;text-transform:uppercase;opacity:.85}
+  tr:last-child td{border-bottom:none}
+  .rank{font-weight:800;font-size:1.1rem}
+  .rank.r1{color:#FFD700}.rank.r2{color:#C0C0C0}.rank.r3{color:#CD7F32}
+  .streak{color:#FFB3BA;font-weight:700}
+  .score{font-weight:700;color:#5CDB95}
+  .empty{padding:40px;text-align:center;opacity:.7}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;flex-wrap:wrap}
+  .topbar a{color:#74B9FF;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a href="/">← Back to home</a>
+    <span id="authState"></span>
+  </div>
+  <h1>🏆 Leaderboard</h1>
+  <p class="sub">Top 20 best scores per category. Sign in and play to make the board!</p>
+  <div class="cats" id="cats"></div>
+  <div id="board"></div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.4";
+const supabase = createClient(
+  "https://zspcixpgjhvrzynfraxh.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzcGNpeHBnamh2cnp5bmZyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzExMDAsImV4cCI6MjA5NDU0NzEwMH0.UVBW-N0Yvx2kh9YCZ-mG8NMf9FyQhjiyVL_VX69pnhM"
+);
+
+const CATEGORIES = ["general-knowledge", "science", "technology"];
+const params = new URLSearchParams(location.search);
+let active = params.get("cat") || "general-knowledge";
+
+const catsEl = document.getElementById("cats");
+CATEGORIES.forEach(c => {
+  const b = document.createElement("button");
+  b.textContent = c.replace(/-/g, " ").replace(/\b\w/g, ch => ch.toUpperCase());
+  b.dataset.cat = c;
+  b.onclick = () => { active = c; render(); };
+  catsEl.appendChild(b);
+});
+
+async function renderAuth(){
+  const { data } = await supabase.auth.getSession();
+  const el = document.getElementById("authState");
+  if (data.session) {
+    el.innerHTML = `<button id="so" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer">Sign out</button>`;
+    document.getElementById("so").onclick = async () => { await supabase.auth.signOut(); renderAuth(); };
+  } else {
+    el.innerHTML = `<a href="/auth.html" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:600">Sign in</a>`;
+  }
+}
+renderAuth();
+
+async function render(){
+  for (const b of catsEl.querySelectorAll("button"))
+    b.classList.toggle("active", b.dataset.cat === active);
+
+  const board = document.getElementById("board");
+  board.innerHTML = `<div class="empty">Loading…</div>`;
+
+  const { data: rows, error } = await supabase
+    .from("scores")
+    .select("score,total,best_streak,difficulty,created_at,user_id")
+    .eq("category", active)
+    .order("score", { ascending: false })
+    .order("best_streak", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(20);
+
+  if (error) { board.innerHTML = `<div class="empty">Error loading scores.</div>`; return; }
+  if (!rows || rows.length === 0) {
+    board.innerHTML = `<div class="empty">No scores yet — be the first!</div>`;
+    return;
+  }
+
+  const ids = [...new Set(rows.map(r => r.user_id))];
+  const { data: profs } = await supabase
+    .from("profiles").select("id,display_name").in("id", ids);
+  const nameById = Object.fromEntries((profs||[]).map(p => [p.id, p.display_name]));
+
+  let html = `<table><thead><tr>
+    <th>#</th><th>Player</th><th>Score</th><th>Streak</th><th>Difficulty</th><th>Date</th>
+  </tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    const rk = i + 1;
+    const cls = rk === 1 ? "r1" : rk === 2 ? "r2" : rk === 3 ? "r3" : "";
+    html += `<tr>
+      <td class="rank ${cls}">${rk === 1 ? "🥇" : rk === 2 ? "🥈" : rk === 3 ? "🥉" : "#"+rk}</td>
+      <td>${(nameById[r.user_id] || "Anonymous").replace(/[<>]/g,"")}</td>
+      <td class="score">${r.score}/${r.total}</td>
+      <td class="streak">🔥 ${r.best_streak}</td>
+      <td>${r.difficulty}</td>
+      <td>${new Date(r.created_at).toLocaleDateString()}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  board.innerHTML = html;
+}
+render();
+</script>
+</body>
+</html>

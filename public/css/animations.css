@@ -1,0 +1,221 @@
+/* Animation Keyframes */
+
+/* Pulse Animation for Timer Warning */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Correct Answer Pulse */
+@keyframes correctPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
+    }
+}
+
+/* Shake Animation for Wrong Answer */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-8px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(8px);
+    }
+}
+
+/* Float Up Animation */
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-50px) scale(1.5);
+    }
+
+    100% {
+        transform: translateY(-100px) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Scale In Animation for Results */
+@keyframes scaleIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide In from Bottom */
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Slide In from Top */
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-20px);
+    }
+
+    60% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Rotate Animation */
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Apply Animations to Elements */
+.quiz-container {
+    animation: fadeIn 0.5s ease;
+}
+
+.option-btn {
+    animation: slideInUp 0.4s ease backwards;
+}
+
+.option-btn:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.option-btn:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.option-btn:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.option-btn:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.question {
+    animation: fadeIn 0.6s ease;
+}
+
+.result-container {
+    animation: fadeIn 0.8s ease;
+}
+
+.btn {
+    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* Ripple Effect */
+.option-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.option-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
